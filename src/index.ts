@@ -20,7 +20,7 @@ setInterval(async () => {
     ksfMapData = data.map((server: any) => {
       const previous = ksfMapData.find((s) => s.ip === server.IP);
 
-      const mapChanged = !previous || previous.map !== server.map;
+      const mapChanged = !previous ? true : previous.map !== server.map;
 
       return {
         ip: server.IP,
