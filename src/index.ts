@@ -97,7 +97,7 @@ async function mapAlertInterval(guildId: string, channelId: string) {
           if (
             channel &&
             ksfMapData.some((server: any) =>
-              guildData.maps.some((m) => m.map === server.map),
+              guildData.maps.some((m) => m.map === server.map && !m.hasAlerted),
             )
           ) {
             const TextChannel = channel as TextChannel;
