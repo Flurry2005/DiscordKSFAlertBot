@@ -4,8 +4,10 @@ import dotenv from "dotenv";
 dotenv.config();
 
 type GuildData = {
-  maps: string[];
+  maps: GuildMap[];
 };
+
+type GuildMap = { map: string; hasAlerted: boolean };
 
 const guildMemory = new Map<string, GuildData>();
 
@@ -21,11 +23,17 @@ setInterval(async () => {
       const previous = ksfMapData.find((s) => s.ip === server.IP);
 
       const mapChanged = !previous ? true : previous.map !== server.map;
-
+      if (mapChanged) {
+        guildMemory.forEach((guildData) => {
+          const mapEntry = guildData.maps.find((m) => m.map === server.map);
+          if (mapEntry) {
+            mapEntry.hasAlerted = false;
+          }
+        });
+      }
       return {
         ip: server.IP,
         map: server.map,
-        hasAlerted: !mapChanged,
       };
     });
   } catch (err) {
@@ -88,17 +96,15 @@ async function mapAlertInterval(guildId: string, channelId: string) {
         .then(async (channel) => {
           if (
             channel &&
-            ksfMapData.some(
-              (server: any) =>
-                guildData.maps.includes(server.map) && !server.hasAlerted,
+            ksfMapData.some((server: any) =>
+              guildData.maps.some((m) => m.map === server.map),
             )
           ) {
             const TextChannel = channel as TextChannel;
 
-            guildData.maps.map((map) => {
-              const server = ksfMapData.find((s) => s.map === map);
-
-              if (!server?.ip) return `**${map}**`;
+            guildData.maps.map((mapEntry) => {
+              const server = ksfMapData.find((s) => s.map === mapEntry.map);
+              if (!server?.ip) return;
 
               TextChannel.send(
                 `@everyone KSF Alert! [${server.map}](${process.env.WEBSITE_URL}/${server.ip}) has gone live!`,
@@ -141,14 +147,14 @@ client.on("interactionCreate", async (interaction) => {
 
     const current = guildMemory.get(guildId)!.maps;
 
-    if (current.includes(mapName)) {
+    if (current.some((m) => m.map.toLowerCase() === mapName.toLowerCase())) {
       return interaction.reply({
         content: "Map already exists.",
         ephemeral: true,
       });
     }
 
-    current.push(mapName);
+    current.push({ map: mapName, hasAlerted: false });
     guildMemory.set(guildId, { maps: current });
 
     return interaction.reply({
