@@ -88,8 +88,9 @@ async function mapAlertInterval(guildId: string, channelId: string) {
         .then(async (channel) => {
           if (
             channel &&
-            ksfMapData.some((server: any) =>
-              guildData.maps.includes(server.map),
+            ksfMapData.some(
+              (server: any) =>
+                guildData.maps.includes(server.map) && !server.hasAlerted,
             )
           ) {
             const TextChannel = channel as TextChannel;
@@ -100,7 +101,7 @@ async function mapAlertInterval(guildId: string, channelId: string) {
               if (!server?.ip) return `**${map}**`;
 
               TextChannel.send(
-                `@everyone KSF Alert! [${server.map}](${process.env.WEBSITE_URL}/connect/${server.ip}) has gone live!`,
+                `@everyone KSF Alert! [${server.map}](${process.env.WEBSITE_URL}/${server.ip}) has gone live!`,
               );
             });
           }
