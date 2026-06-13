@@ -39,7 +39,7 @@ setInterval(async () => {
   } catch (err) {
     console.error("KSF poll error:", err);
   }
-}, 1000);
+}, 60_000);
 
 const client = new Client({
   intents: [IntentsBitField.Flags.Guilds],
@@ -116,7 +116,7 @@ async function mapAlertInterval(guildId: string, channelId: string) {
           console.error(`Failed to fetch channel ${channelId}:`, err);
         });
     }
-  }, 1000);
+  }, 10_000);
 }
 
 client.once("clientReady", async () => {
