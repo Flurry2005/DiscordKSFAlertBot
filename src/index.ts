@@ -16,7 +16,7 @@ import DatabaseConnection from "./services/Database.js";
 import mapsModel from "./backend/models/mapsModel.js";
 
 dotenv.config();
-DatabaseConnection.connect();
+await DatabaseConnection.connect();
 
 /* ---------------- KEEP ALIVE ---------------- */
 
