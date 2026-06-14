@@ -59,38 +59,46 @@ async function pollKSFServers() {
     const res = await fetch("https://ksf.surf/api/servers?game=css");
     const data = await res.json();
 
-    const newMap = new Map<string, KSFServerState>();
+    const newSnapshot = new Map<string, KSFServerState>();
 
     for (const server of data ?? []) {
       if (!server?.IP || !server?.map) continue;
 
+      const ip = server.IP;
+
       const normalized: KSFServerState = {
-        ip: server.IP,
+        ip,
         map: server.map,
         tier: server.tier,
         player_count: server.playerCount,
       };
 
-      newMap.set(server.IP, normalized);
-      serverByMap.set(server.map, normalized);
+      const previous = serverByMap.get(ip);
+      const mapChanged = !previous || previous.map !== normalized.map;
 
-      // reset alert state if needed
-      for (const guild of guildMemory) {
-        const mapEntry = guild.maps.find((m) => m.map === server.map);
-        if (!mapEntry) continue;
+      newSnapshot.set(ip, normalized);
 
-        mapEntry.hasAlerted = false;
+      // ONLY reset when map actually changes
+      if (mapChanged) {
+        for (const guild of guildMemory) {
+          const mapEntry = guild.maps.find((m) => m.map === normalized.map);
+          if (!mapEntry) continue;
 
-        GuildModel.updateOne(
-          { guildId: guild.guildId, "maps.map": mapEntry.map },
-          { $set: { "maps.$.hasAlerted": false } },
-        ).catch(() => {});
+          mapEntry.hasAlerted = false;
+
+          GuildModel.updateOne(
+            { guildId: guild.guildId, "maps.map": mapEntry.map },
+            { $set: { "maps.$.hasAlerted": false } },
+          ).catch(() => {});
+        }
       }
     }
 
-    // replace snapshot
+    // swap snapshots atomically
     serverByMap.clear();
-    for (const [k, v] of newMap) serverByMap.set(k, v);
+    for (const [ip, state] of newSnapshot) {
+      serverByMap.set(ip, state);
+    }
   } catch (err) {
     console.error("KSF poll error:", err);
   }
